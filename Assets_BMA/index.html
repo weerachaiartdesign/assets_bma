@@ -10,6 +10,8 @@
     :root {
       --primary: #10b981;
       --primary-dark: #059669;
+      --danger: #ef4444; /* สีแดงสำหรับปุ่มสแกน */
+      --danger-dark: #dc2626;
       --bg-dark: #0f172a;
       --glass: rgba(30, 41, 59, 0.7);
       --glass-border: rgba(255, 255, 255, 0.1);
@@ -98,13 +100,22 @@
       transition: 0.3s;
     }
 
+    /* สไตล์เฉพาะสำหรับปุ่มสแกนสีแดง */
+    .btn-scan-qr {
+      background: var(--danger);
+    }
+    .btn-scan-qr:hover {
+      background: var(--danger-dark);
+      transform: translateY(-1px);
+    }
+
     .btn-action:hover { 
       background: var(--primary-dark);
       transform: translateY(-1px);
     }
 
     .btn-close-cam {
-      background: #ef4444;
+      background: #475569; /* ปรับสีปุ่มปิดกล้องเป็นสีเทาเข้มเพื่อให้ตัดกับปุ่มสแกน */
       display: none;
     }
 
@@ -203,7 +214,8 @@
     <div id="reader"></div>
     <div id="qrStatus" class="status-bar status-idle">พร้อมสำหรับการสแกน</div>
     <div class="scan-controls">
-      <button class="btn-action" id="startBtn" onclick="startCamera()">📷 สแกน QR Code</button>
+      <!-- เปลี่ยนคลาสปุ่มเป็นสีแดง -->
+      <button class="btn-action btn-scan-qr" id="startBtn" onclick="startCamera()">📷 สแกน QR Code</button>
       <button class="btn-action btn-close-cam" id="stopBtn" onclick="stopCamera()">✖ ปิดกล้อง</button>
       <button class="btn-action" onclick="document.getElementById('fileInput').click()">🖼️ เลือกรูป</button>
       <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="scanFromFile(this)">
@@ -324,17 +336,17 @@
         
         if (res.error) throw new Error(res.error);
         
-        // รายการ ID ทั้งหมดที่เรามีอยู่ในหน้า UI นี้
+        // รายการ ID ทั้งหมดที่เรามีอยู่ในหน้า UI นี้ เพื่อกระจายข้อมูลให้ถูกฟิลด์
         const fieldsToUpdate = [
           'f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9', 
           'f10', 'f11', 'f12', 'f13', 'f15', 'f19', 'f20'
         ];
 
-        // วนลูปเช็คว่าในข้อมูลที่ส่งมา (res) มีค่าของ ID นั้นๆ หรือไม่
+        // วนลูปแมป ID ข้อมูลเข้ากับ ID ของช่อง Input โดยตรง
         fieldsToUpdate.forEach(id => {
           const element = document.getElementById(id);
           if (element) {
-            // ถ้ามีข้อมูลส่งมาให้ใส่ค่า ถ้าไม่มีให้ใส่เป็นค่าว่าง
+            // ใส่ค่าที่ได้มา (ถ้าไม่มีให้เป็นค่าว่าง)
             element.value = res[id] !== undefined ? res[id] : "";
           }
         });
@@ -355,7 +367,6 @@
       btn.innerText = "⌛ กำลังบันทึก...";
       
       const formData = {};
-      // เลือกเอาเฉพาะ input ที่มี id และอยู่ในฟอร์ม
       document.querySelectorAll('#assetForm input').forEach(i => {
         if(i.id) formData[i.id] = i.value;
       });
@@ -375,7 +386,6 @@
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }
       } catch (error) {
-        // กรณี no-cors หรือเน็ตหลุดแต่บันทึกสำเร็จ
         alert("บันทึกข้อมูลเรียบร้อยแล้ว");
         document.getElementById('assetForm').reset();
         qrStatus.innerText = "พร้อมสำหรับการสแกน";

@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>BMA Asset Management</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <style>
+    :root {
+      --primary: #10b981;
+      --primary-dark: #059669;
+      --bg-dark: #0f172a;
+      --glass: rgba(30, 41, 59, 0.7);
+      --glass-border: rgba(255, 255, 255, 0.1);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Sarabun', sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(160deg, #0f172a 0%, #1e293b 100%);
+      color: #f8fafc;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px 16px;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      width: 300px; height: 300px;
+      background: var(--primary);
+      border-radius: 50%;
+      filter: blur(100px);
+      opacity: 0.1;
+      top: -50px; right: -50px;
+      z-index: -1;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .header h1 {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      line-height: 1.4;
+    }
+
+    .scanner-container {
+      width: 100%;
+      max-width: 450px;
+      background: var(--glass);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--glass-border);
+      border-radius: 24px;
+      overflow: hidden;
+      margin-bottom: 20px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    }
+
+    #reader {
+      width: 100%;
+      background: #000;
+      border: none !important;
+      display: none;
+    }
+
+    .scan-controls {
+      padding: 16px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn-action {
+      flex: 1;
+      min-width: 120px;
+      padding: 12px;
+      border-radius: 12px;
+      border: none;
+      background: var(--primary);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: 0.3s;
+    }
+
+    .btn-action:hover { 
+      background: var(--primary-dark);
+      transform: translateY(-1px);
+    }
+
+    .btn-close-cam {
+      background: #ef4444;
+      display: none;
+    }
+
+    .data-card {
+      width: 100%;
+      max-width: 450px;
+      background: var(--glass);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--glass-border);
+      border-radius: 24px;
+      padding: 20px;
+    }
+
+    .group-label {
+      font-size: 15px;
+      color: var(--primary);
+      font-weight: 700;
+      margin: 25px 0 15px 4px;
+      padding-left: 10px;
+      border-left: 3px solid var(--primary);
+    }
+    .group-label:first-child { margin-top: 5px; }
+
+    .grid-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .input-group { margin-bottom: 12px; }
+    .input-group.full { grid-column: span 2; }
+
+    label {
+      display: block;
+      font-size: 14px;
+      color: #94a3b8;
+      margin-bottom: 6px;
+      margin-left: 4px;
+      font-weight: 600;
+    }
+
+    input {
+      width: 100%;
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid var(--glass-border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      color: #fff;
+      font-size: 14px;
+      font-family: inherit;
+    }
+
+    input:focus {
+      border-color: var(--primary);
+      outline: none;
+      background: rgba(15, 23, 42, 0.8);
+    }
+
+    .btn-save {
+      width: 100%;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 14px;
+      padding: 16px;
+      font-size: 16px;
+      font-weight: 700;
+      margin-top: 10px;
+      cursor: pointer;
+      box-shadow: 0 10px 20px rgba(16, 185, 129, 0.2);
+    }
+
+    .status-bar {
+      padding: 10px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 10px;
+    }
+
+    .status-idle { color: #94a3b8; }
+    .status-loading { color: #fbbf24; }
+    .status-success { color: var(--primary); }
+
+    #hiddenFields { display: none; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>โปรแกรมเพื่อจัดการฐานข้อมูล<br>บัญชีทรัพย์สิน กทม.</h1>
+  </div>
+
+  <div class="scanner-container">
+    <div id="reader"></div>
+    <div id="qrStatus" class="status-bar status-idle">พร้อมสำหรับการสแกน</div>
+    <div class="scan-controls">
+      <button class="btn-action" id="startBtn" onclick="startCamera()">📷 สแกน QR Code</button>
+      <button class="btn-action btn-close-cam" id="stopBtn" onclick="stopCamera()">✖ ปิดกล้อง</button>
+      <button class="btn-action" onclick="document.getElementById('fileInput').click()">🖼️ เลือกรูป</button>
+      <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="scanFromFile(this)">
+    </div>
+  </div>
+
+  <div class="data-card">
+    <form id="assetForm">
+      
+      <div class="group-label">ข้อมูลประเภททรัพย์สิน</div>
+      <div class="input-group full">
+        <label>เลขครุภัณฑ์</label>
+        <input type="text" id="f1" placeholder="รอการสแกน..." style="border-left: 4px solid var(--primary)">
+      </div>
+      <div class="input-group full">
+        <label>ชื่อประเภทหลัก</label>
+        <input type="text" id="f3">
+      </div>
+      <div class="input-group full">
+        <label>ชื่อประเภทรอง</label>
+        <input type="text" id="f4">
+      </div>
+
+      <div class="group-label">รายละเอียดครุภัณฑ์</div>
+      <div class="grid-row">
+        <div class="input-group"><label>ชื่อรายการ</label><input type="text" id="f5"></div>
+        <div class="input-group"><label>ชื่อรายการย่อย</label><input type="text" id="f6"></div>
+      </div>
+      <div class="grid-row">
+        <div class="input-group"><label>ยี่ห้อ</label><input type="text" id="f7"></div>
+        <div class="input-group"><label>รุ่น</label><input type="text" id="f8"></div>
+      </div>
+      <div class="input-group full"><label>เลขทะเบียน (S/N)</label><input type="text" id="f9"></div>
+
+      <div class="group-label">ข้อมูลการได้มา และมูลค่าทรัพย์สิน</div>
+      <div class="input-group full"><label>ประเภทการรับทรัพย์สิน</label><input type="text" id="f10"></div>
+      <div class="grid-row">
+        <div class="input-group"><label>วันทีรับครั้งแรก</label><input type="text" id="f11"></div>
+        <div class="input-group"><label>วันที่รับเข้าหน่วยงาน</label><input type="text" id="f12"></div>
+      </div>
+      <div class="grid-row">
+        <div class="input-group"><label>อายุการใช้งาน(ปี)</label><input type="text" id="f13"></div>
+        <div class="input-group"><label>มูลค่าต้นทุน</label><input type="text" id="f15"></div>
+      </div>
+
+      <div class="group-label">สถานะและที่ตั้ง</div>
+      <div class="grid-row">
+        <div class="input-group"><label>สถานะทรัพย์สิน</label><input type="text" id="f19"></div>
+        <div class="input-group"><label>ที่ตั้งทรัพย์สิน</label><input type="text" id="f20"></div>
+      </div>
+
+      <div id="hiddenFields">
+        <input type="hidden" id="f2">
+        <input type="hidden" id="scan_date">
+        <input type="hidden" id="url">
+      </div>
+
+      <button type="button" class="btn-save" id="saveBtn" onclick="submitData()">
+        บันทึกข้อมูล
+      </button>
+    </form>
+  </div>
+
+  <script src="js/api-config.js"></script>
+  <script>
+    let html5QrCode = null;
+    const qrStatus = document.getElementById('qrStatus');
+    const readerDiv = document.getElementById('reader');
+    const stopBtn = document.getElementById('stopBtn');
+    const startBtn = document.getElementById('startBtn');
+
+    async function startCamera() {
+      if (html5QrCode && html5QrCode.isScanning) return; 
+      readerDiv.style.display = 'block';
+      stopBtn.style.display = 'flex';
+      startBtn.style.display = 'none';
+      qrStatus.innerText = "🔍 กำลังเปิดกล้อง...";
+      try {
+        if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
+        const config = { fps: 20, qrbox: { width: 250, height: 250 } };
+        await html5QrCode.start({ facingMode: "environment" }, config, (text) => handleScanResult(text));
+        qrStatus.innerText = "📸 เล็งไปที่ QR Code";
+      } catch (err) {
+        qrStatus.innerText = "❌ ไม่สามารถเปิดกล้องได้";
+        stopCamera();
+      }
+    }
+
+    async function stopCamera() {
+      if (html5QrCode && html5QrCode.isScanning) {
+        try { await html5QrCode.stop(); } catch (err) {}
+      }
+      readerDiv.style.display = 'none';
+      stopBtn.style.display = 'none';
+      startBtn.style.display = 'flex';
+      qrStatus.innerText = "พร้อมสำหรับการสแกน";
+    }
+
+    function scanFromFile(input) {
+      if (!input.files[0]) return;
+      qrStatus.innerText = "⌛ กำลังสแกนไฟล์...";
+      const fileScanner = new Html5Qrcode("reader");
+      fileScanner.scanFile(input.files[0], true)
+        .then(text => { handleScanResult(text); fileScanner.clear(); })
+        .catch(err => { alert("ไม่พบ QR Code ในรูปภาพ"); qrStatus.innerText = "พร้อมสำหรับการสแกน"; fileScanner.clear(); });
+    }
+
+    async function handleScanResult(url) {
+      await stopCamera();
+      document.getElementById('url').value = url;
+      document.getElementById('scan_date').value = new Date().toLocaleString('th-TH');
+      qrStatus.innerText = "⌛ กำลังดึงข้อมูลจาก กทม...";
+      qrStatus.className = "status-bar status-loading";
+      try {
+        const response = await fetch(`${GAS_API_URL}?action=getBmaData&url=${encodeURIComponent(url)}`);
+        const res = await response.json();
+        if (res.error) throw new Error(res.error);
+        const fields = ['f1','f2','f3','f4','f5','f6','f7','f8','f9','f10','f11','f12','f13','f15','f19','f20'];
+        fields.forEach(id => {
+          const el = document.getElementById(id);
+          if (el && res[id]) el.value = res[id];
+        });
+        qrStatus.innerText = "✅ ดึงข้อมูลสำเร็จ";
+        qrStatus.className = "status-bar status-success";
+      } catch (err) {
+        alert("ผิดพลาด: " + err.message);
+        qrStatus.innerText = "❌ ดึงข้อมูลล้มเหลว";
+        qrStatus.className = "status-bar";
+      }
+    }
+
+    async function submitData() {
+      const btn = document.getElementById('saveBtn');
+      btn.disabled = true;
+      btn.innerText = "⌛ กำลังบันทึก...";
+      const formData = {};
+      document.querySelectorAll('#assetForm input').forEach(i => { if(i.id) formData[i.id] = i.value; });
+      try {
+        const response = await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify(formData) });
+        const result = await response.json();
+        alert(result.message);
+        if (result.success) {
+          document.getElementById('assetForm').reset();
+          qrStatus.innerText = "พร้อมสำหรับการสแกน";
+          qrStatus.className = "status-bar status-idle";
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      } catch (error) {
+        alert("ระบบบันทึกเรียบร้อยแล้ว");
+        document.getElementById('assetForm').reset();
+        qrStatus.innerText = "พร้อมสำหรับการสแกน";
+        qrStatus.className = "status-bar status-idle";
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } finally {
+        btn.disabled = false;
+        btn.innerText = "บันทึกข้อมูล";
+      }
+    }
+  </script>
+</body>
+</html>

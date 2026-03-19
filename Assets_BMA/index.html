@@ -153,7 +153,6 @@
       <div id="modalIcon" class="modal-icon">✅</div>
       <div id="modalText" class="modal-text">บันทึกข้อมูลเรียบร้อย!</div>
       <button class="modal-btn" onclick="closeModal()">ตกลง</button>
-      <button id="modalCancelBtn" class="modal-btn secondary" style="display:none;" onclick="closeModal()">ยกเลิก</button>
     </div>
   </div>
 
@@ -229,8 +228,9 @@
   </div>
 
   <script>
-    // หมายเหตุ: อย่าลืมตรวจสอบตัวแปร GAS_API_URL ในไฟล์ js/api-config.js หรือประกาศไว้ที่นี่
-    // const GAS_API_URL = "YOUR_GOOGLE_APPS_SCRIPT_URL";
+    // --- แก้ไขตรงนี้: ใส่ URL ที่ได้จาก Google Apps Script (ตอน Deploy) ---
+    const GAS_API_URL = "https://script.google.com/macros/s/1t4CIboT9eZXnSZXddyFyvSz-Qm3bEZyz5FgNZbkwVuE/exec"; 
+    // -------------------------------------------------------------------
 
     let html5QrCode = null;
     let isDuplicate = false;
@@ -244,7 +244,6 @@
     const saveBtn = document.getElementById('saveBtn');
     const resetBtn = document.getElementById('resetBtn');
 
-    // ฟังก์ชัน Custom Modal
     function showModal(message, type = 'success', callback = null) {
       const modal = document.getElementById('customModal');
       const text = document.getElementById('modalText');
@@ -253,7 +252,6 @@
       text.innerText = message;
       icon.innerText = (type === 'success') ? '✅' : (type === 'error' ? '❌' : '⚠️');
       modalCallback = callback;
-      
       modal.style.display = 'flex';
     }
 
@@ -315,7 +313,9 @@
 
       try {
         const response = await fetch(`${GAS_API_URL}?action=getBmaData&url=${encodeURIComponent(url)}`);
+        if (!response.ok) throw new Error("Network response was not ok");
         const res = await response.json();
+        
         if (res.error) throw new Error(res.error);
 
         const fields = ['f1','f2','f3','f4','f5','f6','f7','f8','f9','f10','f11','f12','f13','f15','f19','f20'];
@@ -351,7 +351,7 @@
           saveBtn.style.display = 'none';
           resetBtn.style.display = 'block';
         }
-      } catch (e) { console.error(e); }
+      } catch (e) { console.error("Duplicate check error:", e); }
     }
 
     function resetFormToIdle() {
@@ -366,23 +366,32 @@
     }
 
     async function submitData() {
-      if (typeof GAS_API_URL === 'undefined' || !GAS_API_URL) {
-          showModal("กรุณาตั้งค่า GAS_API_URL ในระบบก่อนบันทึก", "error");
+      if (!GAS_API_URL || GAS_API_URL.includes("YOUR_GOOGLE_APPS_SCRIPT_URL")) {
+          showModal("กรุณาตั้งค่า GAS_API_URL ให้ถูกต้อง", "error");
           return;
       }
+      
       saveBtn.disabled = true;
       saveBtn.innerText = "⌛ กำลังบันทึก...";
+      
       const formData = {};
       document.querySelectorAll('#assetForm input').forEach(i => { if(i.id) formData[i.id] = i.value; });
       
       try {
-        const response = await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify(formData) });
-        const result = await response.json();
-        showModal(result.message, result.success ? "success" : "error", () => {
-          if (result.success) resetFormToIdle();
+        const response = await fetch(GAS_API_URL, { 
+          method: 'POST', 
+          mode: 'no-cors', // สำคัญ: Google Apps Script มักต้องการโหมดนี้สำหรับ POST
+          body: JSON.stringify(formData) 
         });
+
+        // เนื่องจาก no-cors เราจะไม่เห็น JSON ผลลัพธ์ แต่ถ้าไม่พังแสดงว่าส่งสำเร็จ
+        showModal("บันทึกข้อมูลเรียบร้อย!", "success", () => {
+          resetFormToIdle();
+        });
+        
       } catch (error) {
-        showModal("บันทึกข้อมูลเรียบร้อย!", "success", () => resetFormToIdle());
+        console.error("Submit error:", error);
+        showModal("เกิดข้อผิดพลาดในการบันทึก", "error");
       } finally {
         saveBtn.disabled = false;
         saveBtn.innerText = "บันทึกข้อมูล";

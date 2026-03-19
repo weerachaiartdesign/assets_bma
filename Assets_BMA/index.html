@@ -8,22 +8,43 @@
   <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
     :root {
-      --primary: #10b981; --primary-dark: #059669; --warning: #f59e0b; --danger: #ef4444;
-      --bg-dark: #0f172a; --glass: rgba(30, 41, 59, 0.7); --glass-border: rgba(255, 255, 255, 0.1);
+      --primary: #10b981;
+      --primary-dark: #059669;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --bg-dark: #0f172a;
+      --glass: rgba(30, 41, 59, 0.7);
+      --glass-border: rgba(255, 255, 255, 0.1);
     }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
-      font-family: 'Sarabun', sans-serif; min-height: 100vh;
+      font-family: 'Sarabun', sans-serif;
+      min-height: 100vh;
       background: linear-gradient(160deg, #0f172a 0%, #1e293b 100%);
-      color: #f8fafc; display: flex; flex-direction: column; align-items: center; padding: 20px 16px;
+      color: #f8fafc;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px 16px;
     }
+
     .header { text-align: center; margin-bottom: 24px; }
     .header h1 { font-size: 20px; font-weight: 700; color: var(--primary); text-transform: uppercase; line-height: 1.4; }
+
     .scanner-container {
-      width: 100%; max-width: 450px; background: var(--glass); backdrop-filter: blur(12px);
-      border: 1px solid var(--glass-border); border-radius: 24px; overflow: hidden; margin-bottom: 20px;
+      width: 100%; max-width: 450px;
+      background: var(--glass);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--glass-border);
+      border-radius: 24px;
+      overflow: hidden;
+      margin-bottom: 20px;
     }
+
     #reader { width: 100%; background: #000; display: none; }
+
     .scan-controls { padding: 16px; display: flex; gap: 10px; flex-wrap: wrap; }
     .btn-action {
       flex: 1; min-width: 120px; padding: 12px; border-radius: 12px; border: none;
@@ -31,69 +52,77 @@
       cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
     }
     .btn-close-cam { background: var(--danger); display: none; }
+
     .data-card {
-      width: 100%; max-width: 450px; background: var(--glass); backdrop-filter: blur(12px);
-      border: 1px solid var(--glass-border); border-radius: 24px; padding: 20px;
+      width: 100%; max-width: 450px;
+      background: var(--glass);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--glass-border);
+      border-radius: 24px;
+      padding: 20px;
     }
-    #customModal {
-      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(4px); z-index: 9999;
-      align-items: center; justify-content: center; padding: 20px;
-    }
-    .modal-content {
-      background: #1e293b; border: 1px solid var(--glass-border); border-radius: 24px;
-      width: 100%; max-width: 320px; padding: 24px; text-align: center;
-    }
-    .modal-icon { font-size: 40px; margin-bottom: 16px; }
-    .modal-text { font-size: 16px; margin-bottom: 20px; line-height: 1.5; font-weight: 500; }
-    .modal-btn {
-      width: 100%; padding: 12px; border-radius: 12px; border: none;
-      background: var(--primary); color: white; font-weight: 700; cursor: pointer;
-    }
+
+    /* Duplicate Warning UI */
     .duplicate-alert {
-      display: none; background: rgba(239, 68, 68, 0.25); border: 2px solid var(--danger);
-      color: #ffcfcf; padding: 16px; border-radius: 16px; margin-bottom: 20px; text-align: center;
+      display: none;
+      background: rgba(239, 68, 68, 0.25);
+      border: 2px solid var(--danger);
+      color: #ffcfcf;
+      padding: 16px;
+      border-radius: 16px;
+      margin-bottom: 20px;
+      text-align: center;
+      animation: pulse 2s infinite;
     }
+
+    @keyframes pulse {
+      0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+      70% { transform: scale(1.02); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+      100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+
     .group-label {
       font-size: 15px; color: var(--primary); font-weight: 700;
       margin: 25px 0 15px 4px; padding-left: 10px; border-left: 3px solid var(--primary);
     }
+
     .input-group { margin-bottom: 12px; }
     .input-group.full { grid-column: span 2; }
     .grid-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
     label { display: block; font-size: 14px; color: #94a3b8; margin-bottom: 4px; font-weight: 600; }
     input {
       width: 100%; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--glass-border);
       border-radius: 10px; padding: 10px 12px; color: #fff; font-size: 14px;
     }
+
     .btn-save {
       width: 100%; background: var(--primary); color: #fff; border: none;
       border-radius: 14px; padding: 16px; font-size: 16px; font-weight: 700;
       margin-top: 10px; cursor: pointer;
     }
+    .btn-save:disabled { background: #4b5563; opacity: 0.5; cursor: not-allowed; }
+
+    /* ปุ่มล้างข้อมูลเมื่อซ้ำ */
     .btn-reset {
       width: 100%; background: #475569; color: #fff; border: none;
       border-radius: 14px; padding: 16px; font-size: 16px; font-weight: 700;
       margin-top: 10px; cursor: pointer; display: none;
     }
+
     .status-bar { padding: 10px; text-align: center; font-size: 13px; font-weight: 600; border-radius: 10px; }
     .status-idle { color: #94a3b8; }
     .status-loading { color: var(--warning); }
     .status-success { color: var(--primary); }
+
     #hiddenFields { display: none; }
   </style>
 </head>
 <body>
 
-  <div id="customModal">
-    <div class="modal-content">
-      <div id="modalIcon" class="modal-icon">✅</div>
-      <div id="modalText" class="modal-text">บันทึกข้อมูลเรียบร้อย!</div>
-      <button class="modal-btn" onclick="closeModal()">ตกลง</button>
-    </div>
+  <div class="header">
+    <h1>โปรแกรมบันทึกครุภัณฑ์ กทม.</h1>
   </div>
-
-  <div class="header"><h1>ระบบนำเข้าข้อมูลทรัพย์สิน กทม.</h1></div>
 
   <div class="scanner-container">
     <div id="reader"></div>
@@ -109,12 +138,17 @@
   <div class="data-card">
     <div id="duplicateAlert" class="duplicate-alert">
       <div style="font-size: 24px; margin-bottom: 8px;">🚫</div>
-      <strong>ข้อมูลซ้ำ!</strong><br>เลขครุภัณฑ์นี้ถูกบันทึกในระบบเรียบร้อยแล้ว
+      <strong>ข้อมูลซ้ำ!</strong><br>
+      เลขครุภัณฑ์นี้ถูกบันทึกในระบบเรียบร้อยแล้ว<br>
+      <small>(ไม่สามารถบันทึกซ้ำได้)</small>
     </div>
 
     <form id="assetForm">
       <div class="group-label">ข้อมูลประเภททรัพย์สิน</div>
-      <div class="input-group full"><label>เลขครุภัณฑ์</label><input type="text" id="f1" readonly placeholder="รอการสแกน..."></div>
+      <div class="input-group full">
+        <label>เลขครุภัณฑ์</label>
+        <input type="text" id="f1" placeholder="รอการสแกน..." readonly>
+      </div>
       <div class="input-group full"><label>ชื่อประเภทหลัก</label><input type="text" id="f3"></div>
       <div class="input-group full"><label>ชื่อประเภทรอง</label><input type="text" id="f4"></div>
 
@@ -129,17 +163,6 @@
       </div>
       <div class="input-group full"><label>เลขทะเบียน (S/N)</label><input type="text" id="f9"></div>
 
-      <div class="group-label">ข้อมูลการได้มา และมูลค่าทรัพย์สิน</div>
-      <div class="input-group full"><label>ประเภทการรับทรัพย์สิน</label><input type="text" id="f10"></div>
-      <div class="grid-row">
-        <div class="input-group"><label>วันที่รับครั้งแรก</label><input type="text" id="f11"></div>
-        <div class="input-group"><label>วันที่รับเข้าหน่วยงาน</label><input type="text" id="f12"></div>
-      </div>
-      <div class="grid-row">
-        <div class="input-group"><label>อายุใช้งาน (ปี)</label><input type="text" id="f13"></div>
-        <div class="input-group"><label>มูลค่าต้นทุน</label><input type="text" id="f15"></div>
-      </div>
-
       <div class="group-label">สถานะและที่ตั้ง</div>
       <div class="grid-row">
         <div class="input-group"><label>สถานะทรัพย์สิน</label><input type="text" id="f19"></div>
@@ -148,12 +171,21 @@
 
       <div id="hiddenFields">
         <input type="hidden" id="f2">
+        <input type="hidden" id="f10"><input type="hidden" id="f11"><input type="hidden" id="f12">
+        <input type="hidden" id="f13"><input type="hidden" id="f15">
         <input type="hidden" id="scan_date">
         <input type="hidden" id="url">
       </div>
 
-      <button type="button" class="btn-save" id="saveBtn" onclick="submitData()">บันทึกข้อมูล</button>
-      <button type="button" class="btn-reset" id="resetBtn" onclick="resetFormToIdle()">🔄 ล้างข้อมูล / สแกนรายการใหม่</button>
+      <!-- ปุ่มบันทึก (จะถูกซ่อนถ้าข้อมูลซ้ำ) -->
+      <button type="button" class="btn-save" id="saveBtn" onclick="submitData()">
+        บันทึกข้อมูล
+      </button>
+
+      <!-- ปุ่มเริ่มใหม่ (จะแสดงเมื่อข้อมูลซ้ำ) -->
+      <button type="button" class="btn-reset" id="resetBtn" onclick="resetFormToIdle()">
+        🔄 ล้างข้อมูล / สแกนรายการใหม่
+      </button>
     </form>
   </div>
 
@@ -161,96 +193,130 @@
   <script>
     let html5QrCode = null;
     let isDuplicate = false;
-    let modalCallback = null;
-
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzfE2qCqG5pE3Hw0y4UqL-Xj3oHq2P7p3Q/exec"; // ระบุ URL ของคุณ
-
-    function showModal(message, type = 'success', callback = null) {
-      const modal = document.getElementById('customModal');
-      document.getElementById('modalText').innerText = message;
-      document.getElementById('modalIcon').innerText = (type === 'success') ? '✅' : '❌';
-      modalCallback = callback;
-      modal.style.display = 'flex';
-    }
-
-    function closeModal() {
-      document.getElementById('customModal').style.display = 'none';
-      if (modalCallback) modalCallback();
-    }
+    const qrStatus = document.getElementById('qrStatus');
+    const readerDiv = document.getElementById('reader');
+    const stopBtn = document.getElementById('stopBtn');
+    const startBtn = document.getElementById('startBtn');
+    const duplicateAlert = document.getElementById('duplicateAlert');
+    const saveBtn = document.getElementById('saveBtn');
+    const resetBtn = document.getElementById('resetBtn');
 
     async function startCamera() {
-      document.getElementById('reader').style.display = 'block';
-      document.getElementById('stopBtn').style.display = 'flex';
-      document.getElementById('startBtn').style.display = 'none';
-      if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
-      await html5QrCode.start({ facingMode: "environment" }, { fps: 20, qrbox: 250 }, (text) => handleScanResult(text));
+      if (html5QrCode && html5QrCode.isScanning) return; 
+      readerDiv.style.display = 'block';
+      stopBtn.style.display = 'flex';
+      startBtn.style.display = 'none';
+      qrStatus.innerText = "🔍 กำลังเปิดกล้อง...";
+      try {
+        if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
+        const config = { fps: 20, qrbox: { width: 250, height: 250 } };
+        await html5QrCode.start({ facingMode: "environment" }, config, (text) => handleScanResult(text));
+        qrStatus.innerText = "📸 เล็งไปที่ QR Code";
+      } catch (err) {
+        qrStatus.innerText = "❌ ไม่สามารถเปิดกล้องได้";
+        stopCamera();
+      }
     }
 
     async function stopCamera() {
-      if (html5QrCode && html5QrCode.isScanning) await html5QrCode.stop();
-      document.getElementById('reader').style.display = 'none';
-      document.getElementById('stopBtn').style.display = 'none';
-      document.getElementById('startBtn').style.display = 'flex';
+      if (html5QrCode && html5QrCode.isScanning) {
+        try { await html5QrCode.stop(); } catch (err) {}
+      }
+      readerDiv.style.display = 'none';
+      stopBtn.style.display = 'none';
+      startBtn.style.display = 'flex';
     }
 
     function scanFromFile(input) {
       if (!input.files[0]) return;
+      qrStatus.innerText = "⌛ กำลังสแกนไฟล์...";
       const fileScanner = new Html5Qrcode("reader");
-      fileScanner.scanFile(input.files[0], true).then(text => { handleScanResult(text); }).catch(err => { showModal("ไม่พบ QR Code", "error"); });
+      fileScanner.scanFile(input.files[0], true)
+        .then(text => { handleScanResult(text); fileScanner.clear(); })
+        .catch(err => { alert("ไม่พบ QR Code ในรูปภาพ"); qrStatus.innerText = "พร้อมสำหรับการสแกน"; fileScanner.clear(); });
     }
 
     async function handleScanResult(url) {
       await stopCamera();
       document.getElementById('url').value = url;
       document.getElementById('scan_date').value = new Date().toLocaleString('th-TH');
-      document.getElementById('qrStatus').innerText = "⌛ กำลังดึงข้อมูล...";
+      qrStatus.innerText = "⌛ กำลังดึงข้อมูล...";
+      qrStatus.className = "status-bar status-loading";
+      
+      // ล้างสถานะเก่า
+      duplicateAlert.style.display = 'none';
+      saveBtn.style.display = 'block';
+      resetBtn.style.display = 'none';
+      isDuplicate = false;
 
       try {
         const response = await fetch(`${GAS_API_URL}?action=getBmaData&url=${encodeURIComponent(url)}`);
         const res = await response.json();
-        
+        if (res.error) throw new Error(res.error);
+
         const fields = ['f1','f2','f3','f4','f5','f6','f7','f8','f9','f10','f11','f12','f13','f15','f19','f20'];
         fields.forEach(id => {
           const el = document.getElementById(id);
           if (el && res[id]) el.value = res[id];
         });
 
+        // เช็คซ้ำ
         await checkDuplicate(res.f1);
-        document.getElementById('qrStatus').innerText = isDuplicate ? "❌ ข้อมูลซ้ำ" : "✅ ดึงข้อมูลสำเร็จ";
-      } catch (err) { showModal("ดึงข้อมูลล้มเหลว", "error"); }
-    }
 
-    async function checkDuplicate(val) {
-      const response = await fetch(`${GAS_API_URL}?action=checkDuplicate&f1=${encodeURIComponent(val)}`);
-      const res = await response.json();
-      if (res.exists) {
-        isDuplicate = true;
-        document.getElementById('duplicateAlert').style.display = 'block';
-        document.getElementById('saveBtn').style.display = 'none';
-        document.getElementById('resetBtn').style.display = 'block';
+        if(isDuplicate) {
+          qrStatus.innerText = "❌ ข้อมูลซ้ำในระบบ";
+          qrStatus.className = "status-bar status-loading";
+        } else {
+          qrStatus.innerText = "✅ ดึงข้อมูลสำเร็จ";
+          qrStatus.className = "status-bar status-success";
+        }
+      } catch (err) {
+        alert("ผิดพลาด: " + err.message);
+        qrStatus.innerText = "❌ ล้มเหลว";
+        qrStatus.className = "status-bar";
       }
     }
 
+    async function checkDuplicate(f1Value) {
+      if (!f1Value) return;
+      try {
+        const response = await fetch(`${GAS_API_URL}?action=checkDuplicate&f1=${encodeURIComponent(f1Value)}`);
+        const res = await response.json();
+        if (res.exists) {
+          isDuplicate = true;
+          duplicateAlert.style.display = 'block';
+          saveBtn.style.display = 'none'; // ซ่อนปุ่มบันทึก
+          resetBtn.style.display = 'block'; // แสดงปุ่มเริ่มใหม่
+        }
+      } catch (e) { console.error(e); }
+    }
+
+    function resetFormToIdle() {
+      document.getElementById('assetForm').reset();
+      duplicateAlert.style.display = 'none';
+      saveBtn.style.display = 'block';
+      saveBtn.disabled = false;
+      resetBtn.style.display = 'none';
+      qrStatus.innerText = "พร้อมสำหรับการสแกน";
+      qrStatus.className = "status-bar status-idle";
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
     async function submitData() {
-      const btn = document.getElementById('saveBtn');
-      btn.disabled = true; btn.innerText = "กำลังบันทึก...";
+      saveBtn.disabled = true;
+      saveBtn.innerText = "⌛ กำลังบันทึก...";
       const formData = {};
       document.querySelectorAll('#assetForm input').forEach(i => { if(i.id) formData[i.id] = i.value; });
       
       try {
         const response = await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify(formData) });
         const result = await response.json();
-        showModal(result.message, result.success ? "success" : "error", () => { if (result.success) resetFormToIdle(); });
-      } catch (e) { showModal("บันทึกเรียบร้อย", "success", () => resetFormToIdle()); }
-      finally { btn.disabled = false; btn.innerText = "บันทึกข้อมูล"; }
-    }
-
-    function resetFormToIdle() {
-      document.getElementById('assetForm').reset();
-      document.getElementById('duplicateAlert').style.display = 'none';
-      document.getElementById('saveBtn').style.display = 'block';
-      document.getElementById('resetBtn').style.display = 'none';
-      document.getElementById('qrStatus').innerText = "พร้อมสำหรับการสแกน";
+        alert(result.message);
+        if (result.success) resetFormToIdle();
+      } catch (error) {
+        alert("บันทึกเรียบร้อย");
+        resetFormToIdle();
+      }
     }
   </script>
 </body>

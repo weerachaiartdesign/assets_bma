@@ -1,2 +1,2 @@
 // ใส่ URL ของ Google Apps Script ที่คุณทำการ Deploy ล่าสุด (Deploy -> New Deployment)
-const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyqHC0eeNFbP_nA_XGhWgWfnGt9mtrgIvCt6ew3Ut4ZxD0JPtnRPROYCRBul0B1SIHa/exec";
+const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyhE5p01bYPDbFDcTGf5627K3R4yW7IOgRIMcFz7JGujrpQ_0WJgmxl-Dn9_Ld-rzmR/exec";

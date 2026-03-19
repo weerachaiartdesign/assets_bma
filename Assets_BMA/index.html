@@ -259,15 +259,7 @@
       </div>
       <div class="grid-row">
         <div class="input-group"><label>อายุการใช้งาน(ปี)</label><input type="text" id="f13"></div>
-        <div class="input-group"><label>อายุการใช้งานจริง</label><input type="text" id="f14"></div>
-      </div>
-      <div class="grid-row">
         <div class="input-group"><label>มูลค่าต้นทุนของทรัพย์สิน</label><input type="text" id="f15"></div>
-        <div class="input-group"><label>รวมค่าเสื่อมราคาเดือนปัจจุบัน</label><input type="text" id="f16"></div>
-      </div>
-      <div class="input-group full">
-        <label>ค่าเสื่อมราคาสะสมของเดือนปัจจุบัน</label>
-        <input type="text" id="f17">
       </div>
 
       <div class="group-label">สถานะและที่ตั้ง</div>
@@ -345,9 +337,10 @@
         
         if (res.error) throw new Error(res.error);
 
-        // วนลูปแมปข้อมูล (ข้าม f18 เนื่องจากลบออกจาก Canvas แล้ว)
+        // วนลูปแมปข้อมูล (ข้าม f14, f16, f17, f18)
+        const skippedFields = [14, 16, 17, 18];
         for (let i = 1; i <= 20; i++) {
-          if (i === 18) continue; 
+          if (skippedFields.includes(i)) continue; 
           const id = `f${i}`;
           const element = document.getElementById(id);
           if (element && res[id]) element.value = res[id];

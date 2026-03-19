@@ -62,6 +62,34 @@
       padding: 20px;
     }
 
+    /* Custom Modal Styles */
+    #customModal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(4px);
+      z-index: 9999;
+      align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .modal-content {
+      background: #1e293b;
+      border: 1px solid var(--glass-border);
+      border-radius: 24px;
+      width: 100%; max-width: 320px;
+      padding: 24px;
+      text-align: center;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+    .modal-icon { font-size: 40px; margin-bottom: 16px; }
+    .modal-text { font-size: 16px; margin-bottom: 20px; line-height: 1.5; font-weight: 500; }
+    .modal-btn {
+      width: 100%; padding: 12px; border-radius: 12px; border: none;
+      background: var(--primary); color: white; font-weight: 700; cursor: pointer;
+    }
+    .modal-btn.secondary { background: #475569; margin-top: 8px; }
+
     /* Duplicate Warning UI */
     .duplicate-alert {
       display: none;
@@ -103,7 +131,6 @@
     }
     .btn-save:disabled { background: #4b5563; opacity: 0.5; cursor: not-allowed; }
 
-    /* ปุ่มล้างข้อมูลเมื่อซ้ำ */
     .btn-reset {
       width: 100%; background: #475569; color: #fff; border: none;
       border-radius: 14px; padding: 16px; font-size: 16px; font-weight: 700;
@@ -120,8 +147,18 @@
 </head>
 <body>
 
+  <!-- Custom Modal HTML -->
+  <div id="customModal">
+    <div class="modal-content">
+      <div id="modalIcon" class="modal-icon">✅</div>
+      <div id="modalText" class="modal-text">บันทึกข้อมูลเรียบร้อย!</div>
+      <button class="modal-btn" onclick="closeModal()">ตกลง</button>
+      <button id="modalCancelBtn" class="modal-btn secondary" style="display:none;" onclick="closeModal()">ยกเลิก</button>
+    </div>
+  </div>
+
   <div class="header">
-    <h1>โปรแกรมบันทึกครุภัณฑ์ กทม.</h1>
+    <h1>ระบบนำเข้าข้อมูลทรัพย์สิน กทม.</h1>
   </div>
 
   <div class="scanner-container">
@@ -161,7 +198,18 @@
         <div class="input-group"><label>ยี่ห้อ</label><input type="text" id="f7"></div>
         <div class="input-group"><label>รุ่น</label><input type="text" id="f8"></div>
       </div>
-      <div class="input-group full"><label>เลขทะเบียน (S/N)</label><input type="text" id="f9"></div>
+      <div class="input-group full"><label>เลขที่หนังสือสำคัญ/เลขทะเบียน (S/N)</label><input type="text" id="f9"></div>
+
+      <div class="group-label">ข้อมูลการได้มา และมูลค่าทรัพย์สิน</div>
+      <div class="input-group full"><label>ประเภทการรับทรัพย์สิน</label><input type="text" id="f10"></div>
+      <div class="grid-row">
+        <div class="input-group"><label>วันที่รับครั้งแรก</label><input type="text" id="f11"></div>
+        <div class="input-group"><label>วันที่รับเข้าหน่วยงาน</label><input type="text" id="f12"></div>
+      </div>
+      <div class="grid-row">
+        <div class="input-group"><label>อายุการใช้งาน (ปี)</label><input type="text" id="f13"></div>
+        <div class="input-group"><label>มูลค่าต้นทุนทรัพย์สิน</label><input type="text" id="f15"></div>
+      </div>
 
       <div class="group-label">สถานะและที่ตั้ง</div>
       <div class="grid-row">
@@ -171,21 +219,12 @@
 
       <div id="hiddenFields">
         <input type="hidden" id="f2">
-        <input type="hidden" id="f10"><input type="hidden" id="f11"><input type="hidden" id="f12">
-        <input type="hidden" id="f13"><input type="hidden" id="f15">
         <input type="hidden" id="scan_date">
         <input type="hidden" id="url">
       </div>
 
-      <!-- ปุ่มบันทึก (จะถูกซ่อนถ้าข้อมูลซ้ำ) -->
-      <button type="button" class="btn-save" id="saveBtn" onclick="submitData()">
-        บันทึกข้อมูล
-      </button>
-
-      <!-- ปุ่มเริ่มใหม่ (จะแสดงเมื่อข้อมูลซ้ำ) -->
-      <button type="button" class="btn-reset" id="resetBtn" onclick="resetFormToIdle()">
-        🔄 ล้างข้อมูล / สแกนรายการใหม่
-      </button>
+      <button type="button" class="btn-save" id="saveBtn" onclick="submitData()">บันทึกข้อมูล</button>
+      <button type="button" class="btn-reset" id="resetBtn" onclick="resetFormToIdle()">🔄 ล้างข้อมูล / สแกนรายการใหม่</button>
     </form>
   </div>
 
@@ -193,6 +232,8 @@
   <script>
     let html5QrCode = null;
     let isDuplicate = false;
+    let modalCallback = null;
+
     const qrStatus = document.getElementById('qrStatus');
     const readerDiv = document.getElementById('reader');
     const stopBtn = document.getElementById('stopBtn');
@@ -200,6 +241,24 @@
     const duplicateAlert = document.getElementById('duplicateAlert');
     const saveBtn = document.getElementById('saveBtn');
     const resetBtn = document.getElementById('resetBtn');
+
+    // ฟังก์ชัน Custom Modal
+    function showModal(message, type = 'success', callback = null) {
+      const modal = document.getElementById('customModal');
+      const text = document.getElementById('modalText');
+      const icon = document.getElementById('modalIcon');
+      
+      text.innerText = message;
+      icon.innerText = (type === 'success') ? '✅' : (type === 'error' ? '❌' : '⚠️');
+      modalCallback = callback;
+      
+      modal.style.display = 'flex';
+    }
+
+    function closeModal() {
+      document.getElementById('customModal').style.display = 'none';
+      if (modalCallback) modalCallback();
+    }
 
     async function startCamera() {
       if (html5QrCode && html5QrCode.isScanning) return; 
@@ -233,7 +292,11 @@
       const fileScanner = new Html5Qrcode("reader");
       fileScanner.scanFile(input.files[0], true)
         .then(text => { handleScanResult(text); fileScanner.clear(); })
-        .catch(err => { alert("ไม่พบ QR Code ในรูปภาพ"); qrStatus.innerText = "พร้อมสำหรับการสแกน"; fileScanner.clear(); });
+        .catch(err => { 
+          showModal("ไม่พบ QR Code ในรูปภาพ", "error");
+          qrStatus.innerText = "พร้อมสำหรับการสแกน"; 
+          fileScanner.clear(); 
+        });
     }
 
     async function handleScanResult(url) {
@@ -243,7 +306,6 @@
       qrStatus.innerText = "⌛ กำลังดึงข้อมูล...";
       qrStatus.className = "status-bar status-loading";
       
-      // ล้างสถานะเก่า
       duplicateAlert.style.display = 'none';
       saveBtn.style.display = 'block';
       resetBtn.style.display = 'none';
@@ -260,7 +322,6 @@
           if (el && res[id]) el.value = res[id];
         });
 
-        // เช็คซ้ำ
         await checkDuplicate(res.f1);
 
         if(isDuplicate) {
@@ -271,7 +332,7 @@
           qrStatus.className = "status-bar status-success";
         }
       } catch (err) {
-        alert("ผิดพลาด: " + err.message);
+        showModal("ผิดพลาด: " + err.message, "error");
         qrStatus.innerText = "❌ ล้มเหลว";
         qrStatus.className = "status-bar";
       }
@@ -285,8 +346,8 @@
         if (res.exists) {
           isDuplicate = true;
           duplicateAlert.style.display = 'block';
-          saveBtn.style.display = 'none'; // ซ่อนปุ่มบันทึก
-          resetBtn.style.display = 'block'; // แสดงปุ่มเริ่มใหม่
+          saveBtn.style.display = 'none';
+          resetBtn.style.display = 'block';
         }
       } catch (e) { console.error(e); }
     }
@@ -311,11 +372,14 @@
       try {
         const response = await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify(formData) });
         const result = await response.json();
-        alert(result.message);
-        if (result.success) resetFormToIdle();
+        showModal(result.message, result.success ? "success" : "error", () => {
+          if (result.success) resetFormToIdle();
+        });
       } catch (error) {
-        alert("บันทึกเรียบร้อย");
-        resetFormToIdle();
+        showModal("บันทึกข้อมูลเรียบร้อย!", "success", () => resetFormToIdle());
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.innerText = "บันทึกข้อมูล";
       }
     }
   </script>

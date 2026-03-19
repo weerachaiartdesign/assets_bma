@@ -289,14 +289,19 @@
 
     function startCamera() {
       readerDiv.style.display = 'block';
-      if (html5QrCode) {
-        html5QrCode.stop().then(() => initCamera());
+      // ตรวจสอบสถานะก่อนเริ่มใหม่
+      if (html5QrCode && html5QrCode.getState() > 1) {
+        html5QrCode.stop().then(() => initCamera()).catch(() => initCamera());
       } else {
         initCamera();
       }
     }
 
     function initCamera() {
+      // สร้าง instance ใหม่เสมอเพื่อป้องกันสถานะค้าง
+      if (html5QrCode) {
+        html5QrCode.clear();
+      }
       html5QrCode = new Html5Qrcode("reader");
       const config = { fps: 20, qrbox: { width: 250, height: 250 } };
       qrStatus.innerText = "🔍 กำลังเปิดกล้อง...";
@@ -321,8 +326,10 @@
     }
 
     async function handleScanResult(url) {
-      if (html5QrCode) {
-        await html5QrCode.stop();
+      if (html5QrCode && html5QrCode.getState() > 1) {
+        try {
+          await html5QrCode.stop();
+        } catch(e) {}
         readerDiv.style.display = 'none';
       }
 
@@ -337,7 +344,6 @@
         
         if (res.error) throw new Error(res.error);
 
-        // วนลูปแมปข้อมูล (ข้าม f14, f16, f17, f18)
         const skippedFields = [14, 16, 17, 18];
         for (let i = 1; i <= 20; i++) {
           if (skippedFields.includes(i)) continue; 
@@ -374,7 +380,15 @@
         
         alert(result.message);
         if (result.success) {
+          // เคลียร์ฟอร์ม
           document.getElementById('assetForm').reset();
+          
+          // Reset ตัวแปรสแกนเนอร์ให้พร้อมทำงานใหม่
+          if (html5QrCode) {
+            try { html5QrCode.clear(); } catch(e) {}
+            html5QrCode = null;
+          }
+          
           qrStatus.innerText = "พร้อมสำหรับการสแกน";
           qrStatus.className = "status-bar status-idle";
           window.scrollTo({ top: 0, behavior: 'smooth' });

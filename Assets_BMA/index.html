@@ -62,17 +62,23 @@
       padding: 20px;
     }
 
+    /* Duplicate Warning UI */
     .duplicate-alert {
       display: none;
-      background: rgba(239, 68, 68, 0.2);
-      border: 1px solid var(--danger);
-      color: #fecaca;
-      padding: 12px;
-      border-radius: 12px;
-      margin-bottom: 15px;
-      font-size: 14px;
+      background: rgba(239, 68, 68, 0.25);
+      border: 2px solid var(--danger);
+      color: #ffcfcf;
+      padding: 16px;
+      border-radius: 16px;
+      margin-bottom: 20px;
       text-align: center;
-      font-weight: 600;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+      70% { transform: scale(1.02); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+      100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
     }
 
     .group-label {
@@ -84,7 +90,7 @@
     .input-group.full { grid-column: span 2; }
     .grid-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
-    label { display: block; font-size: 14px; color: #94a3b8; margin-bottom: 6px; font-weight: 600; }
+    label { display: block; font-size: 14px; color: #94a3b8; margin-bottom: 4px; font-weight: 600; }
     input {
       width: 100%; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--glass-border);
       border-radius: 10px; padding: 10px 12px; color: #fff; font-size: 14px;
@@ -94,6 +100,14 @@
       width: 100%; background: var(--primary); color: #fff; border: none;
       border-radius: 14px; padding: 16px; font-size: 16px; font-weight: 700;
       margin-top: 10px; cursor: pointer;
+    }
+    .btn-save:disabled { background: #4b5563; opacity: 0.5; cursor: not-allowed; }
+
+    /* ปุ่มล้างข้อมูลเมื่อซ้ำ */
+    .btn-reset {
+      width: 100%; background: #475569; color: #fff; border: none;
+      border-radius: 14px; padding: 16px; font-size: 16px; font-weight: 700;
+      margin-top: 10px; cursor: pointer; display: none;
     }
 
     .status-bar { padding: 10px; text-align: center; font-size: 13px; font-weight: 600; border-radius: 10px; }
@@ -123,7 +137,10 @@
 
   <div class="data-card">
     <div id="duplicateAlert" class="duplicate-alert">
-      ⚠️ เลขครุภัณฑ์นี้ถูกบันทึกไปแล้ว!
+      <div style="font-size: 24px; margin-bottom: 8px;">🚫</div>
+      <strong>ข้อมูลซ้ำ!</strong><br>
+      เลขครุภัณฑ์นี้ถูกบันทึกในระบบเรียบร้อยแล้ว<br>
+      <small>(ไม่สามารถบันทึกซ้ำได้)</small>
     </div>
 
     <form id="assetForm">
@@ -154,17 +171,20 @@
 
       <div id="hiddenFields">
         <input type="hidden" id="f2">
-        <input type="hidden" id="f10">
-        <input type="hidden" id="f11">
-        <input type="hidden" id="f12">
-        <input type="hidden" id="f13">
-        <input type="hidden" id="f15">
+        <input type="hidden" id="f10"><input type="hidden" id="f11"><input type="hidden" id="f12">
+        <input type="hidden" id="f13"><input type="hidden" id="f15">
         <input type="hidden" id="scan_date">
         <input type="hidden" id="url">
       </div>
 
+      <!-- ปุ่มบันทึก (จะถูกซ่อนถ้าข้อมูลซ้ำ) -->
       <button type="button" class="btn-save" id="saveBtn" onclick="submitData()">
         บันทึกข้อมูล
+      </button>
+
+      <!-- ปุ่มเริ่มใหม่ (จะแสดงเมื่อข้อมูลซ้ำ) -->
+      <button type="button" class="btn-reset" id="resetBtn" onclick="resetFormToIdle()">
+        🔄 ล้างข้อมูล / สแกนรายการใหม่
       </button>
     </form>
   </div>
@@ -179,6 +199,7 @@
     const startBtn = document.getElementById('startBtn');
     const duplicateAlert = document.getElementById('duplicateAlert');
     const saveBtn = document.getElementById('saveBtn');
+    const resetBtn = document.getElementById('resetBtn');
 
     async function startCamera() {
       if (html5QrCode && html5QrCode.isScanning) return; 
@@ -215,35 +236,22 @@
         .catch(err => { alert("ไม่พบ QR Code ในรูปภาพ"); qrStatus.innerText = "พร้อมสำหรับการสแกน"; fileScanner.clear(); });
     }
 
-    // ฟังก์ชันช่วยสำหรับการ Fetch พร้อม Retry
-    async function fetchWithRetry(url, options = {}, retries = 3) {
-      try {
-        const response = await fetch(url, options);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        return await response.json();
-      } catch (e) {
-        if (retries > 0) return await fetchWithRetry(url, options, retries - 1);
-        throw e;
-      }
-    }
-
     async function handleScanResult(url) {
       await stopCamera();
       document.getElementById('url').value = url;
       document.getElementById('scan_date').value = new Date().toLocaleString('th-TH');
       qrStatus.innerText = "⌛ กำลังดึงข้อมูล...";
       qrStatus.className = "status-bar status-loading";
+      
+      // ล้างสถานะเก่า
       duplicateAlert.style.display = 'none';
+      saveBtn.style.display = 'block';
+      resetBtn.style.display = 'none';
       isDuplicate = false;
 
       try {
-        // ตรวจสอบว่ามีการตั้งค่า GAS_API_URL หรือยัง
-        if (typeof GAS_API_URL === 'undefined' || !GAS_API_URL) {
-          throw new Error("ยังไม่ได้ตั้งค่า GAS_API_URL ในไฟล์ config");
-        }
-
-        const res = await fetchWithRetry(`${GAS_API_URL}?action=getBmaData&url=${encodeURIComponent(url)}`);
-        
+        const response = await fetch(`${GAS_API_URL}?action=getBmaData&url=${encodeURIComponent(url)}`);
+        const res = await response.json();
         if (res.error) throw new Error(res.error);
 
         const fields = ['f1','f2','f3','f4','f5','f6','f7','f8','f9','f10','f11','f12','f13','f15','f19','f20'];
@@ -252,17 +260,18 @@
           if (el && res[id]) el.value = res[id];
         });
 
+        // เช็คซ้ำ
         await checkDuplicate(res.f1);
 
-        qrStatus.innerText = isDuplicate ? "⚠️ พบข้อมูลซ้ำ" : "✅ ดึงข้อมูลสำเร็จ";
-        qrStatus.className = isDuplicate ? "status-bar status-loading" : "status-bar status-success";
-      } catch (err) {
-        console.error(err);
-        let errorMsg = "ผิดพลาด: " + err.message;
-        if (err.message === "Failed to fetch") {
-          errorMsg = "❌ เชื่อมต่อ Server ไม่ได้ (Failed to fetch)\nกรุณาเช็คอินเทอร์เน็ต หรือตั้งค่า Web App เป็น Anyone";
+        if(isDuplicate) {
+          qrStatus.innerText = "❌ ข้อมูลซ้ำในระบบ";
+          qrStatus.className = "status-bar status-loading";
+        } else {
+          qrStatus.innerText = "✅ ดึงข้อมูลสำเร็จ";
+          qrStatus.className = "status-bar status-success";
         }
-        alert(errorMsg);
+      } catch (err) {
+        alert("ผิดพลาด: " + err.message);
         qrStatus.innerText = "❌ ล้มเหลว";
         qrStatus.className = "status-bar";
       }
@@ -271,54 +280,42 @@
     async function checkDuplicate(f1Value) {
       if (!f1Value) return;
       try {
-        const res = await fetchWithRetry(`${GAS_API_URL}?action=checkDuplicate&f1=${encodeURIComponent(f1Value)}`);
+        const response = await fetch(`${GAS_API_URL}?action=checkDuplicate&f1=${encodeURIComponent(f1Value)}`);
+        const res = await response.json();
         if (res.exists) {
           isDuplicate = true;
           duplicateAlert.style.display = 'block';
-          saveBtn.innerText = "บันทึกซ้ำ (ข้อมูลเดิมมีอยู่แล้ว)";
-          saveBtn.style.background = "var(--warning)";
-        } else {
-          isDuplicate = false;
-          duplicateAlert.style.display = 'none';
-          saveBtn.innerText = "บันทึกข้อมูล";
-          saveBtn.style.background = "var(--primary)";
+          saveBtn.style.display = 'none'; // ซ่อนปุ่มบันทึก
+          resetBtn.style.display = 'block'; // แสดงปุ่มเริ่มใหม่
         }
-      } catch (e) {
-        console.error("Check Duplicate Error:", e);
-      }
+      } catch (e) { console.error(e); }
+    }
+
+    function resetFormToIdle() {
+      document.getElementById('assetForm').reset();
+      duplicateAlert.style.display = 'none';
+      saveBtn.style.display = 'block';
+      saveBtn.disabled = false;
+      resetBtn.style.display = 'none';
+      qrStatus.innerText = "พร้อมสำหรับการสแกน";
+      qrStatus.className = "status-bar status-idle";
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     async function submitData() {
-      if (isDuplicate) {
-        if (!confirm("เลขครุภัณฑ์นี้เคยถูกบันทึกแล้ว คุณต้องการบันทึกซ้ำใช่หรือไม่?")) return;
-      }
-
       saveBtn.disabled = true;
       saveBtn.innerText = "⌛ กำลังบันทึก...";
       const formData = {};
       document.querySelectorAll('#assetForm input').forEach(i => { if(i.id) formData[i.id] = i.value; });
       
       try {
-        const response = await fetch(GAS_API_URL, { 
-          method: 'POST', 
-          body: JSON.stringify(formData) 
-        });
+        const response = await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify(formData) });
         const result = await response.json();
         alert(result.message);
-        if (result.success) {
-          document.getElementById('assetForm').reset();
-          duplicateAlert.style.display = 'none';
-          qrStatus.innerText = "พร้อมสำหรับการสแกน";
-          qrStatus.className = "status-bar status-idle";
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
+        if (result.success) resetFormToIdle();
       } catch (error) {
-        // บางครั้ง POST กลับมาแบบ no-cors อาจจะเด้ง error ทั้งที่เข้า sheet แล้ว
-        alert("บันทึกข้อมูลสำเร็จ (กรุณาเช็คใน Sheet)");
-        document.getElementById('assetForm').reset();
-      } finally {
-        saveBtn.disabled = false;
-        saveBtn.innerText = "บันทึกข้อมูล";
+        alert("บันทึกเรียบร้อย");
+        resetFormToIdle();
       }
     }
   </script>

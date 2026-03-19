@@ -190,7 +190,7 @@
     .status-loading { color: #fbbf24; animation: pulse 1.5s infinite; }
     .status-success { color: var(--primary); }
 
-    /* กลุ่มข้อมูลระบบ (Hidden) - f2 ย้ายมาที่นี่ */
+    /* กลุ่มข้อมูลระบบ (Hidden) */
     #systemGroup { display: none; }
 
     @keyframes fadeInDown {
@@ -278,7 +278,7 @@
 
       <!-- กลุ่มข้อมูลระบบ (Hidden) -->
       <div id="systemGroup">
-        <input type="text" id="f2"> <!-- ซ่อนช่องรหัสประเภททรัพย์สิน แต่ยังเก็บค่าไว้ -->
+        <input type="text" id="f2">
         <input type="hidden" id="scan_date">
         <input type="hidden" id="url">
       </div>
@@ -345,8 +345,9 @@
         
         if (res.error) throw new Error(res.error);
 
-        // วนลูปแมปข้อมูล f1 - f20 (ยกเว้น f18 ที่ถูกเอาออก แต่ API ส่งมาเป็นค่าว่างได้)
+        // วนลูปแมปข้อมูล (ข้าม f18 เนื่องจากลบออกจาก Canvas แล้ว)
         for (let i = 1; i <= 20; i++) {
+          if (i === 18) continue; 
           const id = `f${i}`;
           const element = document.getElementById(id);
           if (element && res[id]) element.value = res[id];

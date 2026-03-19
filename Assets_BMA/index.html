@@ -158,7 +158,7 @@
   </div>
 
   <div class="header">
-    <h1>โปรแกรมบันทึกครุภัณฑ์ กทม.</h1>
+    <h1>ระบบนำเข้าข้อมูลทรัพย์สิน กทม.</h1>
   </div>
 
   <div class="scanner-container">
@@ -200,6 +200,17 @@
       </div>
       <div class="input-group full"><label>เลขที่หนังสือสำคัญ/เลขทะเบียน (S/N)</label><input type="text" id="f9"></div>
 
+      <div class="group-label">ข้อมูลการได้มา และมูลค่าทรัพย์สิน</div>
+      <div class="input-group full"><label>ประเภทการรับทรัพย์สิน</label><input type="text" id="f10"></div>
+      <div class="grid-row">
+        <div class="input-group"><label>วันที่รับครั้งแรก</label><input type="text" id="f11"></div>
+        <div class="input-group"><label>วันที่รับเข้าหน่วยงาน</label><input type="text" id="f12"></div>
+      </div>
+      <div class="grid-row">
+        <div class="input-group"><label>อายุการใช้งาน (ปี)</label><input type="text" id="f13"></div>
+        <div class="input-group"><label>มูลค่าต้นทุนทรัพย์สิน</label><input type="text" id="f15"></div>
+      </div>
+
       <div class="group-label">สถานะและที่ตั้ง</div>
       <div class="grid-row">
         <div class="input-group"><label>สถานะทรัพย์สิน</label><input type="text" id="f19"></div>
@@ -208,8 +219,6 @@
 
       <div id="hiddenFields">
         <input type="hidden" id="f2">
-        <input type="hidden" id="f10"><input type="hidden" id="f11"><input type="hidden" id="f12">
-        <input type="hidden" id="f13"><input type="hidden" id="f15">
         <input type="hidden" id="scan_date">
         <input type="hidden" id="url">
       </div>

@@ -1,4 +1,4 @@
-<!-- version assets_BMA_0073 -->
+<!-- version assets_BMA_0074 -->
 
 <!DOCTYPE html>
 <html lang="th">
@@ -6,9 +6,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>BMA Asset Management</title>
+  
+  <!-- นำเข้า Google Fonts และ Library สำหรับสแกน QR Code -->
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/html5-qrcode"></script>
+
   <style>
+    /* =========================================
+       CSS Variables: กำหนดค่าสีหลักของระบบ
+       ========================================= */
     :root {
       --primary: #10b981;
       --primary-dark: #059669;
@@ -32,9 +38,11 @@
       padding: 20px 16px;
     }
 
+    /* สไตล์สำหรับส่วนหัว (Header) */
     .header { text-align: center; margin-bottom: 24px; }
     .header h1 { font-size: 20px; font-weight: 700; color: var(--primary); text-transform: uppercase; line-height: 1.4; }
 
+    /* สไตล์สำหรับกล่องสแกนเนอร์ */
     .scanner-container {
       width: 100%; max-width: 450px;
       background: var(--glass);
@@ -47,6 +55,7 @@
 
     #reader { width: 100%; background: #000; display: none; }
 
+    /* ปุ่มควบคุมกล้อง */
     .scan-controls { padding: 16px; display: flex; gap: 10px; flex-wrap: wrap; }
     .btn-action {
       flex: 1; min-width: 120px; padding: 12px; border-radius: 12px; border: none;
@@ -55,6 +64,7 @@
     }
     .btn-close-cam { background: var(--danger); display: none; }
 
+    /* สไตล์การ์ดแสดงข้อมูล */
     .data-card {
       width: 100%; max-width: 450px;
       background: var(--glass);
@@ -64,7 +74,7 @@
       padding: 20px;
     }
 
-    /* Custom Modal Styles */
+    /* Modal (หน้าต่างแจ้งเตือน) */
     #customModal {
       display: none;
       position: fixed;
@@ -90,9 +100,8 @@
       width: 100%; padding: 12px; border-radius: 12px; border: none;
       background: var(--primary); color: white; font-weight: 700; cursor: pointer;
     }
-    .modal-btn.secondary { background: #475569; margin-top: 8px; }
 
-    /* Duplicate Warning UI */
+    /* อนิเมชั่นสำหรับการแจ้งเตือนข้อมูลซ้ำ */
     .duplicate-alert {
       display: none;
       background: rgba(239, 68, 68, 0.25);
@@ -111,6 +120,7 @@
       100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
     }
 
+    /* หัวข้อกลุ่มข้อมูล */
     .group-label {
       font-size: 15px; color: var(--primary); font-weight: 700;
       margin: 25px 0 15px 4px; padding-left: 10px; border-left: 3px solid var(--primary);
@@ -125,7 +135,9 @@
       width: 100%; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--glass-border);
       border-radius: 10px; padding: 10px 12px; color: #fff; font-size: 14px;
     }
+    input::placeholder { color: #475569; }
 
+    /* ปุ่มบันทึกและปุ่มรีเซ็ต */
     .btn-save {
       width: 100%; background: var(--primary); color: #fff; border: none;
       border-radius: 14px; padding: 16px; font-size: 16px; font-weight: 700;
@@ -139,6 +151,7 @@
       margin-top: 10px; cursor: pointer; display: none;
     }
 
+    /* แถบสถานะ */
     .status-bar { padding: 10px; text-align: center; font-size: 13px; font-weight: 600; border-radius: 10px; }
     .status-idle { color: #94a3b8; }
     .status-loading { color: var(--warning); }
@@ -149,13 +162,12 @@
 </head>
 <body>
 
-  <!-- Custom Modal HTML -->
+  <!-- Modal แจ้งผลการทำงาน -->
   <div id="customModal">
     <div class="modal-content">
       <div id="modalIcon" class="modal-icon">✅</div>
       <div id="modalText" class="modal-text">บันทึกข้อมูลเรียบร้อย!</div>
       <button class="modal-btn" onclick="closeModal()">ตกลง</button>
-      <button id="modalCancelBtn" class="modal-btn secondary" style="display:none;" onclick="closeModal()">ยกเลิก</button>
     </div>
   </div>
 
@@ -163,6 +175,7 @@
     <h1>ระบบนำเข้าข้อมูลทรัพย์สิน กทม.</h1>
   </div>
 
+  <!-- ส่วนแสดงกล้องสแกน QR Code -->
   <div class="scanner-container">
     <div id="reader"></div>
     <div id="qrStatus" class="status-bar status-idle">พร้อมสำหรับการสแกน</div>
@@ -170,11 +183,14 @@
       <button class="btn-action" id="startBtn" onclick="startCamera()">📷 เปิดกล้องสแกน</button>
       <button class="btn-action btn-close-cam" id="stopBtn" onclick="stopCamera()">✖ ปิดกล้อง</button>
       <button class="btn-action" onclick="document.getElementById('fileInput').click()">🖼️ เลือกรูป</button>
+      <!-- Input ลับสำหรับเลือกไฟล์รูปภาพจากเครื่อง -->
       <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="scanFromFile(this)">
     </div>
   </div>
 
+  <!-- ฟอร์มกรอกข้อมูลครุภัณฑ์ -->
   <div class="data-card">
+    <!-- แจ้งเตือนเมื่อพบเลขครุภัณฑ์ซ้ำในระบบ -->
     <div id="duplicateAlert" class="duplicate-alert">
       <div style="font-size: 24px; margin-bottom: 8px;">🚫</div>
       <strong>ข้อมูลซ้ำ!</strong><br>
@@ -183,6 +199,7 @@
     </div>
 
     <form id="assetForm">
+      <!-- ส่วนที่ 1: ข้อมูลหลัก -->
       <div class="group-label">ข้อมูลประเภททรัพย์สิน</div>
       <div class="input-group full">
         <label>เลขครุภัณฑ์</label>
@@ -191,6 +208,7 @@
       <div class="input-group full"><label>ชื่อประเภทหลัก</label><input type="text" id="f3"></div>
       <div class="input-group full"><label>ชื่อประเภทรอง</label><input type="text" id="f4"></div>
 
+      <!-- ส่วนที่ 2: รายละเอียดเครื่อง -->
       <div class="group-label">รายละเอียดครุภัณฑ์</div>
       <div class="grid-row">
         <div class="input-group"><label>ชื่อรายการ</label><input type="text" id="f5"></div>
@@ -202,6 +220,7 @@
       </div>
       <div class="input-group full"><label>เลขที่หนังสือสำคัญ/เลขทะเบียน (S/N)</label><input type="text" id="f9"></div>
 
+      <!-- ส่วนที่ 3: การเงินและเวลา -->
       <div class="group-label">ข้อมูลการได้มา และมูลค่าทรัพย์สิน</div>
       <div class="input-group full"><label>ประเภทการรับทรัพย์สิน</label><input type="text" id="f10"></div>
       <div class="grid-row">
@@ -213,12 +232,18 @@
         <div class="input-group"><label>มูลค่าต้นทุนทรัพย์สิน</label><input type="text" id="f15"></div>
       </div>
 
+      <!-- ส่วนที่ 4: สถานที่และหน่วยงาน (ส่วนที่เพิ่มใหม่) -->
       <div class="group-label">สถานะและที่ตั้ง</div>
       <div class="grid-row">
         <div class="input-group"><label>สถานะทรัพย์สิน</label><input type="text" id="f19"></div>
         <div class="input-group"><label>ที่ตั้งทรัพย์สิน</label><input type="text" id="f20"></div>
       </div>
+      <div class="input-group full">
+        <label>ฝ่าย/กลุ่มงาน</label>
+        <input type="text" id="f_dept" placeholder="ระบบจะแสดงชื่อฝ่ายที่นี่อัตโนมัติ">
+      </div>
 
+      <!-- ส่วนเก็บข้อมูลเบื้องหลัง (ซ่อนไว้) -->
       <div id="hiddenFields">
         <input type="hidden" id="f2">
         <input type="hidden" id="scan_date">
@@ -230,12 +255,18 @@
     </form>
   </div>
 
+  <!-- นำเข้าไฟล์ตั้งค่า API URL -->
   <script src="js/api-config.js"></script>
+
   <script>
+    /* =========================================
+       Global Variables: ตัวแปรหลักของโปรแกรม
+       ========================================= */
     let html5QrCode = null;
     let isDuplicate = false;
     let modalCallback = null;
 
+    // อ้างอิง Element ต่างๆ ในหน้าเว็บ
     const qrStatus = document.getElementById('qrStatus');
     const readerDiv = document.getElementById('reader');
     const stopBtn = document.getElementById('stopBtn');
@@ -244,24 +275,30 @@
     const saveBtn = document.getElementById('saveBtn');
     const resetBtn = document.getElementById('resetBtn');
 
-    // ฟังก์ชัน Custom Modal
+    /**
+     * ฟังก์ชันแสดง Modal แบบกำหนดเอง
+     */
     function showModal(message, type = 'success', callback = null) {
       const modal = document.getElementById('customModal');
       const text = document.getElementById('modalText');
       const icon = document.getElementById('modalIcon');
-      
       text.innerText = message;
       icon.innerText = (type === 'success') ? '✅' : (type === 'error' ? '❌' : '⚠️');
       modalCallback = callback;
-      
       modal.style.display = 'flex';
     }
 
+    /**
+     * ฟังก์ชันปิด Modal
+     */
     function closeModal() {
       document.getElementById('customModal').style.display = 'none';
       if (modalCallback) modalCallback();
     }
 
+    /**
+     * ฟังก์ชันเปิดการใช้งานกล้อง
+     */
     async function startCamera() {
       if (html5QrCode && html5QrCode.isScanning) return; 
       readerDiv.style.display = 'block';
@@ -279,6 +316,9 @@
       }
     }
 
+    /**
+     * ฟังก์ชันปิดกล้อง
+     */
     async function stopCamera() {
       if (html5QrCode && html5QrCode.isScanning) {
         try { await html5QrCode.stop(); } catch (err) {}
@@ -288,6 +328,9 @@
       startBtn.style.display = 'flex';
     }
 
+    /**
+     * ฟังก์ชันสแกน QR จากไฟล์รูปภาพ
+     */
     function scanFromFile(input) {
       if (!input.files[0]) return;
       qrStatus.innerText = "⌛ กำลังสแกนไฟล์...";
@@ -301,11 +344,14 @@
         });
     }
 
+    /**
+     * ฟังก์ชันจัดการผลลัพธ์หลังจากสแกนติด
+     */
     async function handleScanResult(url) {
       await stopCamera();
       document.getElementById('url').value = url;
       document.getElementById('scan_date').value = new Date().toLocaleString('th-TH');
-      qrStatus.innerText = "⌛ กำลังดึงข้อมูล...";
+      qrStatus.innerText = "⌛ กำลังดึงข้อมูลจาก กทม...";
       qrStatus.className = "status-bar status-loading";
       
       duplicateAlert.style.display = 'none';
@@ -314,16 +360,19 @@
       isDuplicate = false;
 
       try {
+        // เรียก API ไปยัง GAS เพื่อดึงข้อมูลเว็บ BMA
         const response = await fetch(`${GAS_API_URL}?action=getBmaData&url=${encodeURIComponent(url)}`);
         const res = await response.json();
         if (res.error) throw new Error(res.error);
 
-        const fields = ['f1','f2','f3','f4','f5','f6','f7','f8','f9','f10','f11','f12','f13','f15','f19','f20'];
+        // นำข้อมูลที่ได้มาใส่ในฟอร์ม (รวมถึงชื่อฝ่าย f_dept ด้วย)
+        const fields = ['f1','f2','f3','f4','f5','f6','f7','f8','f9','f10','f11','f12','f13','f15','f19','f20','f_dept'];
         fields.forEach(id => {
           const el = document.getElementById(id);
           if (el && res[id]) el.value = res[id];
         });
 
+        // ตรวจสอบข้อมูลซ้ำทันที
         await checkDuplicate(res.f1);
 
         if(isDuplicate) {
@@ -340,6 +389,9 @@
       }
     }
 
+    /**
+     * ฟังก์ชันเช็คว่าเลขครุภัณฑ์นี้เคยบันทึกไปหรือยัง
+     */
     async function checkDuplicate(f1Value) {
       if (!f1Value) return;
       try {
@@ -354,6 +406,9 @@
       } catch (e) { console.error(e); }
     }
 
+    /**
+     * ฟังก์ชันล้างข้อมูลในฟอร์มเพื่อเริ่มใหม่
+     */
     function resetFormToIdle() {
       document.getElementById('assetForm').reset();
       duplicateAlert.style.display = 'none';
@@ -365,10 +420,15 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
+    /**
+     * ฟังก์ชันส่งข้อมูลทั้งหมดไปบันทึกลง Google Sheets
+     */
     async function submitData() {
       saveBtn.disabled = true;
       saveBtn.innerText = "⌛ กำลังบันทึก...";
       const formData = {};
+      
+      // วนลูปเก็บค่าจาก Input ทุกตัวที่มี ID
       document.querySelectorAll('#assetForm input').forEach(i => { if(i.id) formData[i.id] = i.value; });
       
       try {
@@ -378,7 +438,7 @@
           if (result.success) resetFormToIdle();
         });
       } catch (error) {
-        showModal("บันทึกข้อมูลเรียบร้อย!", "success", () => resetFormToIdle());
+        showModal("เกิดข้อผิดพลาดในการเชื่อมต่อ", "error");
       } finally {
         saveBtn.disabled = false;
         saveBtn.innerText = "บันทึกข้อมูล";
